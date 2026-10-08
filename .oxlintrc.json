@@ -17,12 +17,22 @@
   "overrides": [
     {
       "files": ["apps/web/**"],
-      "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y"],
+      "plugins": [
+        "typescript",
+        "unicorn",
+        "oxc",
+        "import",
+        "react",
+        "jsx-a11y"
+      ],
       "env": { "browser": true },
       "rules": {
         "react/rules-of-hooks": "error",
         "react/exhaustive-deps": "warn",
-        "react/only-export-components": ["warn", { "allowConstantExport": true }]
+        "react/only-export-components": [
+          "warn",
+          { "allowConstantExport": true }
+        ]
       }
     },
     {
