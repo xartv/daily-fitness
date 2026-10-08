@@ -12,10 +12,11 @@
 
 ## Этап 0. Фундамент монорепо
 
-- [ ] `git init`, `.gitignore` (`node_modules`, `.env`, `dist`)
-- [ ] pnpm workspaces: `apps/web`, `apps/api`, `packages/shared`
-- [ ] Общий `tsconfig.base.json` со `strict`, Oxlint и Prettier на всё монорепо
-- [ ] Пустой `packages/shared` с `zod`; проверить, что пакет импортируется из обоих приложений
+- [x] `git init`, `.gitignore` (`node_modules`, `.env`, `dist`)
+- [x] pnpm workspaces: `apps/web`, `apps/api`, `packages/shared`
+- [x] Общий `tsconfig.base.json` со `strict`, Oxlint и Prettier на всё монорепо
+- [x] Пустой `packages/shared` с `zod`; проверить, что пакет импортируется из обоих приложений (из `web` проверено; из `api` — на этапе 1, когда появится код)
+- [x] Версия Node зафиксирована в `.nvmrc`, команды записаны в `CLAUDE.md`
 
 **Готово, когда:** `pnpm lint` и `pnpm build` проходят по всем пакетам, а команды записаны в `CLAUDE.md`.
 
@@ -25,6 +26,7 @@
 - [ ] Fastify и `server.ts`, конфиг env через zod. Если переменной нет, приложение падает сразу при старте, а не посреди запроса.
 - [ ] Плагины: глобальный error handler в формате `{ error: { code, message } }`, helmet, pino
 - [ ] `GET /api/health`
+- [ ] Проверить, что `@daily-fitness/shared` импортируется в API; добавить `typecheck` и `dev` скрипты в `apps/api`, корневой `dev`
 - [ ] Prisma: `prisma init` и плагин, который декорирует `fastify.prisma`
 
 **Готово, когда:** `pnpm dev` поднимает API, `/api/health` отвечает 200, Prisma подключается к БД.

@@ -145,7 +145,28 @@ PUT    /workouts/:id/exercises    # целиком заменить упражн
 - `.env.example` лежит в каждом приложении, реальные `.env` в git не попадают.
 - Миграции: `prisma migrate dev`. Seed каталога: `prisma db seed`.
 
-> Команды (`pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test` и т.д.) нужно дописать сюда, когда они появятся в `package.json`.
+- Версия Node зафиксирована в `.nvmrc` (`nvm use`), версия pnpm — в поле `packageManager` корневого `package.json`.
+
+### Команды
+
+Запускаются из корня репозитория:
+
+```bash
+pnpm install              # install dependencies for all packages
+pnpm lint                 # oxlint for the whole monorepo (type-aware)
+pnpm typecheck            # tsc in every package that has a typecheck script
+pnpm format               # prettier --write .
+pnpm format:check         # prettier --check . (for CI)
+pnpm -r build             # build all packages
+
+pnpm -F web dev           # Vite dev server
+pnpm -F web build         # typecheck + production build of the SPA
+pnpm -F <pkg> add <dep>   # add a dependency to a specific package
+```
+
+Общие версии зависимостей (`zod`, `typescript`, `@types/node`) задаются в `catalog` в `pnpm-workspace.yaml`, в пакетах указывается `"catalog:"`.
+
+> Команды API (`dev`, `test`, миграции) дописать сюда на этапе 1.
 
 ## Продакшн и деплой
 
