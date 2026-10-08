@@ -1,0 +1,13 @@
+{
+  "name": "@daily-fitness/api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@daily-fitness/shared": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

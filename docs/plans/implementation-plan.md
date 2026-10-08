@@ -14,7 +14,7 @@
 
 - [ ] `git init`, `.gitignore` (`node_modules`, `.env`, `dist`)
 - [ ] pnpm workspaces: `apps/web`, `apps/api`, `packages/shared`
-- [ ] Общий `tsconfig.base.json` со `strict`, ESLint и Prettier на всё монорепо
+- [ ] Общий `tsconfig.base.json` со `strict`, Oxlint и Prettier на всё монорепо
 - [ ] Пустой `packages/shared` с `zod`; проверить, что пакет импортируется из обоих приложений
 
 **Готово, когда:** `pnpm lint` и `pnpm build` проходят по всем пакетам, а команды записаны в `CLAUDE.md`.

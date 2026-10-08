@@ -1,0 +1,14 @@
+{
+  "name": "@daily-fitness/shared",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

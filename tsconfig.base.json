@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* Language and environment */
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": [],
+
+    /* Modules: every package is either bundled (web, api) or consumed as source (shared) */
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+
+    /* Type checking only, emitting is done by bundlers */
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
+}

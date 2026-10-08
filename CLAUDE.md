@@ -49,7 +49,7 @@
 
 ### Инструменты
 - pnpm workspaces (монорепо)
-- ESLint + Prettier
+- Oxlint (один конфиг в корне на всё монорепо, type-aware правила через tsgolint) + Prettier
 - Vitest для юнит-тестов; для интеграционных тестов API — `fastify.inject()` на тестовой БД
 
 ## Структура репозитория
