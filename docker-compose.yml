@@ -1,0 +1,20 @@
+services:
+  postgres:                          # service name = hostname inside the compose network
+    image: postgres:18               # pin the major version, never "latest"
+    restart: unless-stopped          # restart after crash / Docker restart, but not if you stopped it manually
+    environment:                     # official image reads these on FIRST start to create user and DB
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: fitness
+      POSTGRES_DB: fitness
+    ports:
+      - "127.0.0.1:5433:5432"        # host_ip:host_port:container_port
+    volumes:
+      - pgdata:/var/lib/postgresql   # named volume -> data dir (path for Postgres 18+)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitness -d fitness"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:                            # declare the named volume; Docker manages where it lives on disk
