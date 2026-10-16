@@ -35,7 +35,7 @@
 
 **Что сделать**
 
-- Зависимости в `apps/api`: `fastify`, `fastify-plugin`, `fastify-type-provider-zod`, `@fastify/helmet`. Для dev: `tsx` (или аналог, см. ниже) и `pino-pretty`.
+- Зависимости в `apps/api`: `fastify`, `fastify-plugin`, `fastify-type-provider-zod`, `@fastify/helmet`. Для dev: `tsx` (или аналог, см. ниже).
 - Разделить код на два файла:
   - `src/app.ts`: функция `buildApp()` создаёт инстанс Fastify, регистрирует плагины и роуты и возвращает его. Порт она не слушает.
   - `src/server.ts`: вызывает `buildApp()`, затем `listen()` и обрабатывает `SIGINT`/`SIGTERM` через `app.close()`.
@@ -80,7 +80,7 @@
 
 **Что сделать**
 
-- **Pino.** Передать `logger` в опции Fastify: уровень берётся из env, в dev вывод идёт через `pino-pretty` (transport), в проде остаётся чистый JSON.
+- **Pino.** Добавить `pino-pretty` в devDependencies. Передать `logger` в опции Fastify: уровень берётся из env, в dev вывод идёт через `pino-pretty` (transport), в проде остаётся чистый JSON.
 - **Type provider.** Подключить `validatorCompiler` и `serializerCompiler` из `fastify-type-provider-zod`. Без них Zod-схемы в роутах не заработают.
 - **Плагин `src/plugins/error-handler.ts`:**
   - `setErrorHandler` приводит все ошибки к формату `{ error: { code, message, details? } }`;

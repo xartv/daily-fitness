@@ -24,7 +24,7 @@
 
 Подробный план: [`stage-1-api-skeleton.md`](./stage-1-api-skeleton.md).
 
-- [ ] `docker-compose.yml` с Postgres (volume, порт только на localhost)
+- [x] `docker-compose.yml` с Postgres (volume, порт только на localhost)
 - [ ] Fastify и `server.ts`, конфиг env через zod. Если переменной нет, приложение падает сразу при старте, а не посреди запроса.
 - [ ] Плагины: глобальный error handler в формате `{ error: { code, message } }`, helmet, pino
 - [ ] `GET /api/health`
