@@ -6,10 +6,22 @@ import {
 } from "fastify-type-provider-zod";
 import errorHandler from "./plugins/error-handler";
 import routes from "./routes/test";
-import { env } from "./config/env";
+import { env, isDev } from "./config/env";
 
 export async function buildApp() {
-  const app = Fastify({ logger: { level: env.LOG_LEVEL } });
+  const app = Fastify({
+    logger: {
+      level: env.LOG_LEVEL,
+      ...(isDev && {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+          },
+        },
+      }),
+    },
+  });
 
   // Zod schemas in route definitions validate requests and serialize responses
   app.setValidatorCompiler(validatorCompiler);

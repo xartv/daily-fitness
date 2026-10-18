@@ -20,3 +20,4 @@ if (!result.success) {
 }
 
 export const env = result.data;
+export const isDev = env.NODE_ENV === "development";

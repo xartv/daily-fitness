@@ -1,10 +1,8 @@
 import fp from "fastify-plugin";
-import {
-  hasZodFastifySchemaValidationErrors,
-  isResponseSerializationError,
-} from "fastify-type-provider-zod";
+import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
+import { STATUS_CODES } from "node:http";
 
-type ClientError = Error & { statusCode: number; code: string };
+type ClientError = Error & { statusCode: number; code?: string };
 
 // Fastify 5 types the handler's error as unknown, so narrow it by hand
 function isClientError(error: unknown): error is ClientError {
@@ -13,10 +11,22 @@ function isClientError(error: unknown): error is ClientError {
     "statusCode" in error &&
     typeof error.statusCode === "number" &&
     error.statusCode >= 400 &&
-    error.statusCode < 500 &&
-    "code" in error &&
-    typeof error.code === "string"
+    error.statusCode < 500
   );
+}
+
+function formatStatusCode(statusName: string | undefined): string {
+  if (!statusName) {
+    return "CLIENT_ERROR";
+  }
+
+  return statusName.toUpperCase().split(" ").join("_");
+}
+
+function getClientErrorCode(error: ClientError): string {
+  return typeof error.code === "string"
+    ? error.code
+    : formatStatusCode(STATUS_CODES[error.statusCode]);
 }
 
 export default fp(
@@ -35,18 +45,14 @@ export default fp(
         });
       }
 
-      // Response did not match its schema: a bug on our side, never the client's fault
-      if (isResponseSerializationError(error)) {
-        request.log.error(error);
-        return reply.status(500).send({
-          error: { code: "INTERNAL_ERROR", message: "Internal server error" },
-        });
-      }
-
-      // Client errors raised by Fastify itself (malformed JSON, payload too large, ...)
+      // Any 4xx error (from Fastify, plugins or our own code) is safe to pass through
+      // as is; errors without a string code get a generic one so the format stays stable
       if (isClientError(error)) {
         return reply.status(error.statusCode).send({
-          error: { code: error.code, message: error.message },
+          error: {
+            code: getClientErrorCode(error),
+            message: error.message,
+          },
         });
       }
 
