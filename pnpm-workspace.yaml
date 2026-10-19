@@ -3,7 +3,9 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  "@prisma/engines": true
   esbuild: true
+  prisma: true
 
 catalog:
   zod: ^4.6.5

@@ -105,29 +105,116 @@
 
 ## Шаг 5. Prisma
 
-**Что сделать**
-
-- Зависимости: `prisma` (dev) и `@prisma/client`, а также драйвер-адаптер `@prisma/adapter-pg`.
-- `prisma init` внутри `apps/api`.
-- Плагин `src/plugins/prisma.ts` (через `fastify-plugin`): создаёт клиент, делает `decorate('prisma', client)`, в хуке `onClose` вызывает `$disconnect()`. Добавить module augmentation `FastifyInstance` в TS, чтобы `app.prisma` был типизирован.
-- `/api/health` выполняет `SELECT 1` через `$queryRaw`. Если БД недоступна, он отвечает 503.
-- Сгенерированный клиент добавить в `.gitignore`. Скрипт `postinstall` или отдельный `db:generate` вызывает `prisma generate`.
+Цель шага: в процессе API живёт ровно один `PrismaClient`, доступный как `app.prisma`, а `/api/health` честно проверяет соединение с Postgres.
 
 > ⚠️ **Prisma 7 заметно отличается от большинства туториалов в интернете:**
 >
 > - появился `prisma.config.ts` (URL базы берётся оттуда, `.env` сам больше не подгружается);
-> - новый генератор `prisma-client` с явным `output`;
-> - драйвер-адаптеры стали обязательными.
+> - новый генератор `prisma-client` с явным `output`: клиент генерируется в исходники, а не в `node_modules`;
+> - Rust-движок запросов убран, драйвер-адаптеры (`@prisma/adapter-pg`) стали обязательными.
 >
 > Если в гайде встречается `generator client { provider = "prisma-client-js" }` и `url = env(...)` в `schema.prisma`, этот гайд описывает старую версию. Ориентироваться на официальный Getting Started для PostgreSQL и upgrade guide на v7.
+
+### 5.1. Зависимости ✅
+
+- `prisma` в devDependencies (CLI: `init`, `generate`, позже `migrate`), `@prisma/client` и `@prisma/adapter-pg` в dependencies (нужны в рантайме).
+- Все три зафиксированы на одной точной версии (`7.10.1`, без `^`) и обновляются только вместе: CLI генерирует код под конкретную версию клиента.
+- В `allowBuilds` (`pnpm-workspace.yaml`) разрешены install-скрипты `prisma` и `@prisma/engines`: последний скачивает бинарник schema engine, без которого не работают `migrate` и `db push`.
+
+**Почему так**
+
+- **Не доверять тегу `latest` вслепую.** На момент установки у `prisma` тег `latest` указывал на `8.0.0-rc.*`, а у `@prisma/client` на `7.10.1`. `pnpm add prisma` поставил RC восьмой версии, который вдобавок притащил `workerd` и ещё 45 уязвимостей по цепочке. Перед `add` полезно смотреть `npm view <pkg> dist-tags`.
+- **`allowBuilds` — белый список.** pnpm по умолчанию не выполняет install-скрипты зависимостей, потому что это главный вектор supply-chain атак. Разрешать стоит только то, про что понятно, откуда оно и зачем (`pnpm why <pkg>`).
+- **Остаток `pnpm audit`.** 3 уязвимости в `lodash` приходят через Prisma Studio (`prisma → @prisma/studio-core → @visx/* → lodash`). Это dev-инструмент, в рантайм и прод-образ он не попадает. Ждём обновления Prisma, `overrides` не используем.
+
+**Проверка:** `pnpm -F @daily-fitness/api exec prisma --version` показывает одинаковые версии `prisma` и `@prisma/client` и находит Schema Engine. `pnpm why workerd -r` пустой.
+
+### 5.2. `prisma init`
+
+- Запустить внутри `apps/api`. Появятся `prisma/schema.prisma` и `prisma.config.ts`.
+- Сразу после этого посмотреть `git diff`: `init` может дописать строки в `.env` и `.gitignore`. Убедиться, что `DATABASE_URL` в `.env` не перезаписан (порт **5433**, как в `docker-compose.yml`), а лишних записей в `.gitignore` нет.
+- Привести `schema.prisma` к виду v7:
+  - `generator client`: `provider = "prisma-client"` (без `-js`) и `output = "../src/generated/prisma"`;
+  - `datasource db`: только `provider = "postgresql"`, без `url`.
+- Моделей не добавлять, схема остаётся пустой.
+
+**Почему так**
+
+- **Клиент в исходниках.** Генератор `prisma-client` пишет обычные TS-файлы в `src/generated/prisma`, импорт идёт из `src/generated/prisma/client`. Код генерируется как ESM, и это совпадает с `"type": "module"` у API.
+- **Схема пустая.** Модели появятся на этапе 2. `generate` с пустой схемой работает, а миграций пока нет.
+
+### 5.3. `prisma.config.ts` и загрузка `.env`
+
+- В конфиге указать путь к схеме, папку миграций (`prisma/migrations`, пригодится на этапе 2) и `datasource.url` из `DATABASE_URL`.
+- CLI Prisma запускается не через наш `dev`-скрипт, поэтому `--env-file` на него не действует, а сам `.env` Prisma 7 не читает. Загрузить файл встроенным `process.loadEnvFile()` (Node ≥ 21), без пакета `dotenv`.
+- `loadEnvFile()` бросает исключение, если файла нет. Вызывать его только при наличии `.env`: на проде файла не будет, переменные придут из окружения контейнера.
+- Этот файл читает только CLI. Сервер берёт URL из нашего `env` (шаг 3), а не из `prisma.config.ts`.
+
+**Почему так**
+
+- **Одно правило для всех окружений.** Локально переменные берутся из `.env`, в Docker и CI из окружения процесса. Код при этом одинаковый, отличается только источник (12-factor, раздел III).
+- **Без `dotenv`.** В Node уже есть всё нужное, и это на одну зависимость меньше (и на один пакет меньше в цепочке поставок).
+
+**Проверка:** `pnpm -F @daily-fitness/api exec prisma validate` проходит без ошибок.
+
+### 5.4. Генерация клиента и инструменты
+
+- `apps/api/src/generated/` добавить в `.gitignore`.
+- Тот же путь добавить в `.prettierignore` и в `ignorePatterns` в `.oxlintrc.json`.
+- Скрипты в `apps/api/package.json`:
+  - `db:generate` → `prisma generate`;
+  - `postinstall` → `prisma generate`.
+
+**Почему так**
+
+- **Сгенерированный код не коммитят.** Это артефакт, его всегда можно восстановить из `schema.prisma`. В git он даёт огромные бессмысленные диффы и конфликты.
+- **Линтеры не должны проверять чужой код.** Без игнора `pnpm lint` и `pnpm format:check` начнут падать на файлах, которые ты не писал и править не должен.
+- **`postinstall`.** На свежем клоне, в CI и в Docker-сборке клиента ещё нет. Без автоматической генерации `typecheck` упадёт на импорте `generated/prisma/client`. `db:generate` нужен для ручного запуска после правки схемы.
+
+**Проверка:** удалить `src/generated`, выполнить `pnpm install`, и папка должна появиться снова. `pnpm lint` и `pnpm format:check` не упоминают файлы из `src/generated`.
+
+### 5.5. Плагин `src/plugins/prisma.ts`
+
+- Обернуть в `fastify-plugin`, как `error-handler`.
+- Создать адаптер `PrismaPg` с `connectionString: env.DATABASE_URL` и передать его в `new PrismaClient({ adapter })`. URL брать из провалидированного `env`, не из `process.env`.
+- `app.decorate("prisma", client)`.
+- В хуке `onClose` вызвать `client.$disconnect()`.
+- В этом же файле module augmentation: `declare module "fastify"` с полем `prisma: PrismaClient` в `interface FastifyInstance`.
+- Зарегистрировать плагин в `app.ts` до роутов, рядом с `errorHandler`.
+- Явный `$connect()` при старте не вызывать.
 
 **Почему так**
 
 - **Один `PrismaClient` на процесс.** Каждый клиент держит свой пул соединений, а у Postgres жёсткий лимит подключений (по умолчанию 100). Если создавать клиент в каждом модуле или запросе, лимит быстро закончится. Декоратор на инстансе решает это и заодно даёт доступ из сервисов.
-- **Health проверяет БД.** Если API жив, а база нет, `/health` с ответом 200 врёт. Позже Docker healthcheck и мониторинг будут опираться именно на этот эндпоинт.
-- **Схема пустая.** Модели появятся на этапе 2. `generate` с пустой схемой работает, а миграций пока нет.
+- **`fastify-plugin`.** Без него декоратор виден только внутри контекста плагина, и в роутах `app.prisma` будет `undefined` (инкапсуляция, см. шаг 4).
+- **Module augmentation.** TypeScript не знает, что `decorate` добавил поле. Расширение интерфейса через declaration merging даёт типизированный `app.prisma` во всём приложении.
+- **`$disconnect` в `onClose`.** Graceful shutdown из `server.ts` вызывает `app.close()`, а тот запускает все `onClose`-хуки. Соединения закрываются аккуратно и не висят в Postgres до таймаута.
+- **Ленивое подключение.** Пул `pg` открывает соединение на первом запросе. Если БД недоступна при старте, API всё равно поднимется, а `/health` покажет 503. Это даёт процессу пережить перезапуск базы. Явный `$connect()` при старте сделал бы обратное: API падал бы, пока база не готова.
 
-**Проверка:** `/api/health` отвечает 200. После `docker compose stop postgres` он отвечает 503, а сам API при этом не падает.
+**Проверка:** `pnpm typecheck` проходит, и в любом роуте `app.prisma` типизирован без кастов.
+
+### 5.6. `/api/health` с проверкой БД
+
+- Перенести health из временного `routes/test.ts` в постоянное место (`routes/health.ts`), а `test.ts` удалить.
+- В обработчике выполнить `` app.prisma.$queryRaw`SELECT 1` ``.
+- Успех: 200 `{ status: "ok" }`.
+- Ошибка: поймать **в обработчике**, залогировать через `request.log.error`, ответить 503 в общем формате ошибок (`code: "SERVICE_UNAVAILABLE"`).
+- Описать схему ответа через Zod, как для остальных роутов.
+
+**Почему так**
+
+- **Health проверяет БД.** Если API жив, а база нет, `/health` с ответом 200 врёт. Позже Docker healthcheck и мониторинг будут опираться именно на этот эндпоинт.
+- **`SELECT 1`.** Самый дешёвый запрос, который доказывает, что соединение из пула живое и база отвечает.
+- **503, а не 500.** Непойманная ошибка ушла бы в error handler и стала 500 («баг на сервере»). 503 (Service Unavailable) говорит точнее: сервис временно не может работать, повтори позже. Балансировщики и оркестраторы понимают именно так.
+
+### 5.7. Проверка шага целиком
+
+1. `docker compose up -d`, `pnpm -F @daily-fitness/api dev` → `curl localhost:3000/api/health` отвечает **200**.
+2. `docker compose stop postgres` → тот же запрос отвечает **503**, в логе ошибка подключения, процесс API жив.
+3. `docker compose start postgres` → снова **200** без перезапуска API: пул переподключается сам.
+4. Ctrl+C → в логе `shutting down`, процесс завершается без зависания (сработал `$disconnect`).
+5. `pnpm typecheck && pnpm lint && pnpm format:check` проходят.
+6. Свежий клон (или `rm -rf node_modules apps/api/src/generated && pnpm install`) → `pnpm typecheck` проходит без ручного `generate`.
 
 ---
 

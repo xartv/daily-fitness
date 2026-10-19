@@ -1,3 +1,6 @@
 pnpm-lock.yaml
 docs/design/*.html
 *.md
+
+# prisma
+apps/api/src/generated/
