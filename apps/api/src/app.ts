@@ -5,8 +5,9 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 import errorHandler from "./plugins/error-handler";
-import routes from "./routes/test";
+import prisma from "./plugins/prisma";
 import { env, isDev } from "./config/env";
+import routes from "./routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -28,6 +29,7 @@ export async function buildApp() {
   app.setSerializerCompiler(serializerCompiler);
 
   app.register(helmet);
+  app.register(prisma);
   app.register(errorHandler);
 
   // Routes go last so they inherit everything registered above

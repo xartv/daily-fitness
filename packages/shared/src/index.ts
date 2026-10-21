@@ -1,1 +1,1 @@
-export { TEST } from "./test";
+export * from "./common/error";
