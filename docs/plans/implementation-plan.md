@@ -25,11 +25,11 @@
 Подробный план: [`stage-1-api-skeleton.md`](./stage-1-api-skeleton.md).
 
 - [x] `docker-compose.yml` с Postgres (volume, порт только на localhost)
-- [ ] Fastify и `server.ts`, конфиг env через zod. Если переменной нет, приложение падает сразу при старте, а не посреди запроса.
-- [ ] Плагины: глобальный error handler в формате `{ error: { code, message } }`, helmet, pino
-- [ ] `GET /api/health`
-- [ ] Проверить, что `@daily-fitness/shared` импортируется в API; добавить `typecheck` и `dev` скрипты в `apps/api`, корневой `dev`
-- [ ] Prisma: `prisma init` и плагин, который декорирует `fastify.prisma`
+- [x] Fastify и `server.ts`, конфиг env через zod. Если переменной нет, приложение падает сразу при старте, а не посреди запроса.
+- [x] Плагины: глобальный error handler в формате `{ error: { code, message } }`, helmet, pino
+- [x] `GET /api/health`
+- [x] Проверить, что `@daily-fitness/shared` импортируется в API; добавить `typecheck` и `dev` скрипты в `apps/api`, корневой `dev`
+- [x] Prisma: `prisma init` и плагин, который декорирует `fastify.prisma`
 
 **Готово, когда:** `pnpm dev` поднимает API, `/api/health` отвечает 200, Prisma подключается к БД.
 

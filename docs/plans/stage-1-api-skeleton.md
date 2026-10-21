@@ -171,7 +171,7 @@
 - **Линтеры не должны проверять чужой код.** Без игнора `pnpm lint` и `pnpm format:check` начнут падать на файлах, которые ты не писал и править не должен.
 - **`postinstall`.** На свежем клоне, в CI и в Docker-сборке клиента ещё нет. Без автоматической генерации `typecheck` упадёт на импорте `generated/prisma/client`. `db:generate` нужен для ручного запуска после правки схемы.
 
-**Проверка:** удалить `src/generated`, выполнить `pnpm install`, и папка должна появиться снова. `pnpm lint` и `pnpm format:check` не упоминают файлы из `src/generated`.
+**Проверка:** на свежем клоне `pnpm install` создаёт `src/generated`. Если просто удалить папку в рабочей копии, это не сработает: при «Already up to date» pnpm не запускает `postinstall`, и папку нужно вернуть через `db:generate`. `pnpm lint` и `pnpm format:check` не упоминают файлы из `src/generated`.
 
 ### 5.5. Плагин `src/plugins/prisma.ts`
 

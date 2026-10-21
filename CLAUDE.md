@@ -158,6 +158,7 @@ pnpm typecheck            # tsc in every package that has a typecheck script
 pnpm format               # prettier --write .
 pnpm format:check         # prettier --check . (for CI)
 pnpm -r build             # build all packages
+pnpm dev                  # run dev script in every package in parallel (api + web)
 
 pnpm -F web dev           # Vite dev server
 pnpm -F web build         # typecheck + production build of the SPA
@@ -166,7 +167,23 @@ pnpm -F <pkg> add <dep>   # add a dependency to a specific package
 
 Общие версии зависимостей (`zod`, `typescript`, `@types/node`) задаются в `catalog` в `pnpm-workspace.yaml`, в пакетах указывается `"catalog:"`.
 
-> Команды API (`dev`, `test`, миграции) дописать сюда на этапе 1.
+#### API и база
+
+```bash
+docker compose up -d                          # start Postgres (127.0.0.1:5433)
+cp apps/api/.env.example apps/api/.env        # once, on a fresh clone
+
+pnpm -F api dev                               # API with watch (tsx, loads apps/api/.env)
+pnpm -F api typecheck                         # tsc for the API only
+
+pnpm -F api db:generate                       # prisma generate (also runs on postinstall)
+pnpm -F api exec prisma migrate dev           # create and apply a migration after editing schema.prisma
+pnpm -F api exec prisma db seed               # seed the exercise catalog
+```
+
+- `prisma generate` нужно запускать после каждой правки `schema.prisma`: клиент генерируется в `apps/api/src/generated` и в git не попадает. `migrate dev` запускает генерацию сам.
+- `postinstall` не срабатывает, если `pnpm install` пишет «Already up to date». Поэтому, если папка `src/generated` пропала, запусти `db:generate` вручную.
+- `db seed` заработает на этапе 2, когда появится `seed.ts` и `migrations.seed` в `prisma.config.ts`. Команда `test` появится на этапе 5.
 
 ## Продакшн и деплой
 
